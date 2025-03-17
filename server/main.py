@@ -11,6 +11,15 @@ from queue import Queue
 import base64
 from pymongo import MongoClient
 
+
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+MONGO_URI = os.getenv("MONGODB_URI")
+
+
 app = Flask(__name__)
 CORS(app)
 
@@ -28,7 +37,7 @@ Y = data['labels']
 index = faiss.read_index('face_index.faiss')
 
 # MongoDB connection
-mongo_client = MongoClient("mongodb+srv://sureshelite07:lqqmzw7gaeTYwtX7@cluster0.qhckg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+mongo_client = MongoClient(MONGO_URI)
 db = mongo_client["face_recognition_db"]
 known_faces_collection = db["known_faces"]
 unknown_faces_collection = db["unknown_faces"]
