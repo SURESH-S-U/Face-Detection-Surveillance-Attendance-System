@@ -12,6 +12,7 @@
   "dependencies": {
     "@react-three/drei": "^9.99.7",
     "@react-three/fiber": "^8.18.0",
+    "ai": "^4.1.61",
     "axios": "^1.8.2",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",

@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Camera, Users, Clock, Home, Upload } from 'lucide-react';
 import { cn } from '../lib/utils';
-import Chatbot from './Chatbot';
 
  export const NAvigation = () => {
   const location = useLocation();
@@ -43,7 +42,6 @@ export default function Layout() {
         <Outlet />
       </main>
       <div className="fixed bottom-8 right-8 z-50">
-        <Chatbot />
       </div>
     </div>
   );

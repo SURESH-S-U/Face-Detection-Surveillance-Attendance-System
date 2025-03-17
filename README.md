@@ -27,3 +27,16 @@ name : sureshelite07
 pass : 6NtP2zHJyxUJGrWy
 
 mongodb+srv://sureshelite07:6NtP2zHJyxUJGrWy@cluster0.sc6f8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+
+
+
+
+
+
+
+sureshelite07
+
+8qF2QfYbelnprBgI    
+
+mongodb+srv://sureshelite07:8qF2QfYbelnprBgI@cluster0.tbqpf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0

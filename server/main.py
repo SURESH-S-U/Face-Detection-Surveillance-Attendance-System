@@ -28,7 +28,7 @@ Y = data['labels']
 index = faiss.read_index('face_index.faiss')
 
 # MongoDB connection
-mongo_client = MongoClient("mongodb+srv://sureshelite07:6NtP2zHJyxUJGrWy@cluster0.sc6f8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+mongo_client = MongoClient("mongodb+srv://sureshelite07:lqqmzw7gaeTYwtX7@cluster0.qhckg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db = mongo_client["face_recognition_db"]
 known_faces_collection = db["known_faces"]
 unknown_faces_collection = db["unknown_faces"]
@@ -87,7 +87,7 @@ all_known_faces = {}
 all_unknown_faces = {}
 
 # Threshold for face similarity (adjust as needed)
-SIMILARITY_THRESHOLD = 0.7  # Faces with cosine similarity > 0.7 are considered the same person
+SIMILARITY_THRESHOLD = 0.6  # Faces with cosine similarity > 0.7 are considered the same person
 
 # Data structures for each camera
 camera_data = {}
@@ -281,6 +281,7 @@ def generate_frames(camera_id):
         frame = buffer.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        
 
 @app.route('/video_feed')
 def video_feed():
