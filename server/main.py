@@ -72,7 +72,7 @@ def store_face_in_db(face_data, is_known):
 
 # Camera URLs
 camera_urls = [
-    0
+    0,""
 ]
 
 # Desired resolution for processing/display
