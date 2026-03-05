@@ -1,255 +1,190 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Globe, Send, X, Brain, Bot, User, Mic, Volume2 } from 'lucide-react';
+import { Brain, Bot, User, Mic, Send, Globe, Volume2, Sparkles, Terminal, Activity, Command } from 'lucide-react';
+import { Navigation } from '../components/Layout';
 
 const Chatbot = () => {
   const [language, setLanguage] = useState('en');
-  const [isMinimized, setIsMinimized] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [userInput, setUserInput] = useState('');
+  const [processingMessage, setProcessingMessage] = useState(false);
+  const chatContainerRef = useRef(null);
+
   const languages = [
     { code: 'en', name: 'English' },
     { code: 'es', name: 'Español' },
     { code: 'fr', name: 'Français' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'zh', name: '中文' },
-    { code: 'ja', name: '日本語' },
-    { code: 'ar', name: 'العربية' },
     { code: 'hi', name: 'हिन्दी' }
   ];
 
-  const translations = {
-    en: {
-      title: 'AI Assistant',
-      send: 'Send',
-      typeMessage: 'Type your message here...',
-      askAssistant: 'Ask about venue data, occupancy, or anything else',
-      minimize: 'Minimize',
-      maximize: 'Maximize'
-    },
-    es: {
-      title: 'Asistente de IA',
-      send: 'Enviar',
-      typeMessage: 'Escribe tu mensaje aquí...',
-      askAssistant: 'Pregunta sobre datos del lugar, ocupación, o cualquier cosa',
-      minimize: 'Minimizar',
-      maximize: 'Maximizar'
-    },
-    // Add more translations as needed
+  const [messages, setMessages] = useState([
+    { id: 1, role: 'assistant', content: 'Neural link established. I am your 512D Assistant. How can I help you analyze venue metrics today?' }
+  ]);
+
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   };
 
-  const t = translations[language] || translations.en;
-
-  const [messages, setMessages] = useState([
-    { id: 1, role: 'assistant', content: 'Hello! I can help you analyze venue data and retrieve information about detected people. What would you like to know?' }
-  ]);
-  const [userInput, setUserInput] = useState('');
-  const [processingMessage, setProcessingMessage] = useState(false);
-  const chatContainerRef = useRef(null);
+  useEffect(scrollToBottom, [messages, processingMessage]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!userInput.trim() || processingMessage) return;
 
-    const userMessage = { id: messages.length + 1, role: 'user', content: userInput };
-    setMessages(prev => [...prev, userMessage]);
+    const userMsg = { id: Date.now(), role: 'user', content: userInput };
+    setMessages(prev => [...prev, userMsg]);
     setUserInput('');
     setProcessingMessage(true);
 
-    scrollToBottom();
-
-    try {
-      let botResponse = "I'm processing your request about the venue data.";
-      if (userInput.toLowerCase().includes('parking')) {
-        botResponse = `There are currently 68 parking spaces available at the venue.`;
-      } else if (userInput.toLowerCase().includes('people') || userInput.toLowerCase().includes('count')) {
-        botResponse = `Currently, there are 42 people detected in the venue (42% capacity).`;
-      } else if (userInput.toLowerCase().includes('trend') || userInput.toLowerCase().includes('hour')) {
-        botResponse = `Peak occupancy today was at 14:00 with 76 people.`;
-      } else if (userInput.toLowerCase().includes('export') || userInput.toLowerCase().includes('download')) {
-        botResponse = `Export detection data from the Detected People page in the admin dashboard.`;
-      } else if (userInput.toLowerCase().includes('camera') || userInput.toLowerCase().includes('feed')) {
-        botResponse = `View live camera feed on the Venue Monitoring page.`;
-      } else {
-        botResponse = `I can assist with venue occupancy, parking, detection, and trends. What do you need?`;
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const assistantMessage = { id: messages.length + 2, role: 'assistant', content: botResponse };
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (err) {
-      console.error('Error:', err);
-      const errorMessage = { id: messages.length + 2, role: 'assistant', content: 'Sorry, an error occurred. Please try again.' };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
+    // Mock AI Logic
+    setTimeout(() => {
+      let botResponse = "Query processed. I'm analyzing the requested neural data clusters.";
+      if (userInput.toLowerCase().includes('people')) botResponse = "Current sensor data indicates 42 subjects present (42% total capacity).";
+      else if (userInput.toLowerCase().includes('parking')) botResponse = "Parking telemetry shows 68 vacant slots in Sector A and B.";
+      
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: botResponse }]);
       setProcessingMessage(false);
-      scrollToBottom();
-    }
+    }, 1000);
   };
-
-  const scrollToBottom = () => {
-    if (chatContainerRef.current) {
-      setTimeout(() => {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-      }, 100);
-    }
-  };
-
-  useEffect(() => {
-    if (messages.length > 0 && messages[0].role === 'assistant') {
-      const welcomeMessage = `Hello! I can help you analyze venue data and retrieve information. What would you like to know?`;
-      setMessages(prev => [
-        { id: 1, role: 'assistant', content: welcomeMessage },
-        ...prev.slice(1)
-      ]);
-    }
-    scrollToBottom();
-  }, [language]);
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header */}
-          <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <Brain className="w-8 h-8" />
-              <div>
-                <h2 className="text-2xl font-bold">{t.title}</h2>
-                <p className="text-sm text-blue-100">Powered by 512D AI</p>
-              </div>
+    <div className="flex min-h-screen bg-[#020617] text-slate-200">
+      <Navigation />
+      
+      <main className="flex-1 ml-[80px] flex flex-col h-screen overflow-hidden">
+        {/* Header */}
+        <header className="px-8 py-5 border-b border-white/5 flex justify-between items-center bg-[#020617]/50 backdrop-blur-md z-10">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+              <Brain className="w-5 h-5 text-blue-400" />
             </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="bg-white/20 border-none rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
-                >
-                  {languages.map((lang) => (
-                    <option key={lang.code} value={lang.code} className="text-gray-800">
-                      {lang.name}
-                    </option>
-                  ))}
-                </select>
+            <div>
+              <h1 className="text-lg font-black tracking-widest text-white uppercase">Neural Assistant</h1>
+              <div className="flex items-center gap-2 text-[10px] font-bold text-blue-400/60 uppercase">
+                <Activity className="w-3 h-3" /> Protocol: 512D-Alpha
               </div>
             </div>
           </div>
 
-          {/* Chat Area */}
-          <div className="h-[600px] flex flex-col">
-            <div 
-              ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-6 bg-gray-50"
-            >
-              <div className="space-y-6 max-w-3xl mx-auto">
-                {messages.map((message) => (
-                  <div 
-                    key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`flex items-start gap-3 max-w-[70%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        message.role === 'user' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {message.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <div
-                          className={`rounded-2xl px-4 py-3 shadow-sm ${
-                            message.role === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-gray-800 border border-gray-200'
-                          }`}
-                        >
-                          {message.content}
-                        </div>
-                        {message.role === 'assistant' && (
-                          <button 
-                            className={`flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors ${
-                              isSpeaking ? 'text-blue-600' : ''
-                            }`}
-                            onClick={() => setIsSpeaking(!isSpeaking)}
-                          >
-                            <Volume2 className="w-4 h-4" />
-                            <span>{isSpeaking ? 'Stop Speaking' : 'Listen'}</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {processingMessage && (
-                  <div className="flex justify-start">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-200">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"></div>
-                          <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce delay-100"></div>
-                          <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce delay-200"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+          <div className="flex items-center gap-4">
+             <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 items-center">
+              <Globe className="w-3.5 h-3.5 text-slate-500 ml-3 mr-2" />
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-300 focus:outline-none pr-4 py-2"
+              >
+                {languages.map(l => <option key={l.code} value={l.code} className="bg-slate-900">{l.name}</option>)}
+              </select>
             </div>
+            <div className="px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-500 text-[10px] font-black tracking-widest">
+              SYSTEM ONLINE
+            </div>
+          </div>
+        </header>
 
-            {/* Input Area */}
-            <form onSubmit={handleSendMessage} className="p-6 bg-white border-t border-gray-200">
-              <div className="max-w-3xl mx-auto flex flex-col gap-2">
-                <div className="flex gap-3">
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 pr-12"
-                      placeholder={t.typeMessage}
-                      disabled={processingMessage}
-                    />
-                    <button
-                      type="button"
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors ${
-                        isListening 
-                          ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                          : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
-                      }`}
-                      onClick={() => setIsListening(!isListening)}
-                      title={isListening ? 'Stop Recording' : 'Start Recording'}
-                    >
-                      <Mic className={`w-5 h-5 ${isListening ? 'animate-pulse' : ''}`} />
-                    </button>
+        {/* Chat Interface */}
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar" ref={chatContainerRef}>
+          <div className="max-w-4xl mx-auto space-y-8">
+            {messages.map((m) => (
+              <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
+                <div className={`flex gap-4 max-w-[80%] ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 border ${
+                    m.role === 'user' ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20' : 'bg-white/5 border-white/10'
+                  }`}>
+                    {m.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-blue-400" />}
                   </div>
-                  <button
-                    type="submit"
-                    className="bg-blue-600 text-white px-6 rounded-xl hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
-                    disabled={processingMessage || !userInput.trim()}
-                  >
-                    <Send className="w-5 h-5" />
-                    <span>{t.send}</span>
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">{t.askAssistant}</p>
-                  {isListening && (
-                    <div className="flex items-center gap-2 text-sm text-red-600">
-                      <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
-                      <span>Recording...</span>
+                  
+                  <div className="space-y-2">
+                    <div className={`px-5 py-3 rounded-2xl text-sm font-medium leading-relaxed shadow-xl ${
+                      m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white/[0.03] text-slate-200 border border-white/10'
+                    }`}>
+                      {m.content}
                     </div>
-                  )}
+                    {m.role === 'assistant' && (
+                      <button 
+                        onClick={() => setIsSpeaking(!isSpeaking)}
+                        className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-colors ${isSpeaking ? 'text-blue-400' : 'text-slate-600 hover:text-blue-400'}`}
+                      >
+                        <Volume2 className={`w-3 h-3 ${isSpeaking ? 'animate-pulse' : ''}`} />
+                        {isSpeaking ? 'Synthesis Active' : 'Synthesize Audio'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </form>
+            ))}
+
+            {processingMessage && (
+              <div className="flex justify-start">
+                <div className="flex gap-4 items-center">
+                  <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-blue-400 animate-pulse" />
+                  </div>
+                  <div className="flex gap-1.5 p-3">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+
+        {/* Command Input Area */}
+        <div className="p-8 bg-gradient-to-t from-[#020617] to-transparent">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white/[0.03] border border-white/10 rounded-[32px] p-2 shadow-2xl focus-within:border-blue-500/50 transition-all duration-300">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <div className="flex-1 relative flex items-center">
+                  <div className="absolute left-4 p-1.5 bg-white/5 rounded-lg border border-white/10">
+                    <Command className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Enter command or query (e.g., 'Report occupancy')..."
+                    className="w-full bg-transparent py-4 pl-14 pr-12 text-sm text-white focus:outline-none placeholder:text-slate-600 font-medium"
+                    disabled={processingMessage}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsListening(!isListening)}
+                    className={`absolute right-2 p-2.5 rounded-2xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-slate-500 hover:bg-white/5'}`}
+                  >
+                    <Mic className="w-5 h-5" />
+                  </button>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!userInput.trim() || processingMessage}
+                  className="bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-slate-600 text-white px-8 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20"
+                >
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4" />
+                    <span>Execute</span>
+                  </div>
+                </button>
+              </form>
+            </div>
+            <div className="mt-4 flex justify-between px-6">
+               <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Type / for advanced commands</p>
+               {isListening && <p className="text-[10px] font-black text-red-500 uppercase tracking-widest animate-pulse">Recording Audio Stream...</p>}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+      `}</style>
     </div>
   );
 };

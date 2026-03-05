@@ -1,316 +1,169 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, AlertCircle, Power } from 'lucide-react';
+import { Users, AlertCircle, Power, Camera } from 'lucide-react';
 import { Navigation } from '../components/Layout';
 
-const cameras = [
-  { id: 0, name: 'Main Entrance' },
-];
+const API_BASE_URL = "http://localhost:5000";
 
 export default function LiveFeed() {
-  const [selectedCamera, setSelectedCamera] = useState(0);
   const [isOn, setIsOn] = useState(true);
   const [knownUsers, setKnownUsers] = useState([]);
   const [unknownUsers, setUnknownUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const videoRef = useRef(null);
 
-  const API_BASE_URL = "http://localhost:5000";
-
   const fetchRecognitionData = async () => {
     if (!isOn) return;
-
-    setLoading(true);
-    setError(null);
-
     try {
       const response = await fetch(`${API_BASE_URL}/detection_data`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error("Connection failed");
       const data = await response.json();
 
-      const known = [];
-      const unknown = [];
+      const known = data.filter(d => d.status === "known");
+      const unknown = data.filter(d => d.status !== "known");
 
-      data.forEach(detection => {
-        const userObj = {
-          id: detection._id || `detection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: detection.name || "Unknown",
-          time: detection.timestamp || new Date().toISOString(),
-          camera: detection.camera_id !== undefined ? `Camera ${detection.camera_id}` : "Camera 0",
-          image: detection.face_image || null,
-          confidence: detection.confidence ? Math.round(detection.confidence * 100) : null,
-        };
-
-        detection.status === "known" ? known.push(userObj) : unknown.push(userObj);
-      });
-
-      setKnownUsers(prev => {
-        const merged = [...prev, ...known];
-        return merged.filter((obj, index, self) =>
-          index === self.findIndex(o => o.id === obj.id)
-        );
-      });
-
-      setUnknownUsers(prev => {
-        const merged = [...prev, ...unknown];
-        return merged.filter((obj, index, self) =>
-          index === self.findIndex(o => o.id === obj.id)
-        );
-      });
-
-    } catch (error) {
-      console.error("Fetch error:", error);
-      setError(`Failed to load recognition data: ${error.message}`);
-    } finally {
-      setLoading(false);
+      // Keep only recent detections to keep list clean
+      setKnownUsers(known.slice(0, 10));
+      setUnknownUsers(unknown.slice(0, 10));
+    } catch (err) {
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    if (!videoRef.current) return;
-
-    if (isOn) {
+    if (isOn && videoRef.current) {
       videoRef.current.src = `${API_BASE_URL}/video_feed`;
-
-      const videoElement = videoRef.current;
-
-      const errorHandler = () => {
-        setError("Video feed failed to load. Check backend connection.");
-      };
-
-      videoElement.addEventListener('error', errorHandler);
-
-      return () => {
-        videoElement.removeEventListener('error', errorHandler);
-        videoElement.src = '';
-      };
     }
-  }, [isOn, selectedCamera]);
-
-  useEffect(() => {
-    let intervalId;
-
-    if (isOn) {
-      fetchRecognitionData();
-      intervalId = setInterval(fetchRecognitionData, 3000);
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
   }, [isOn]);
 
-  const handleCameraToggle = async () => {
+  useEffect(() => {
+    let intervalId = setInterval(fetchRecognitionData, 3000);
+    return () => clearInterval(intervalId);
+  }, [isOn]);
+
+  const toggleCamera = async () => {
     try {
-      if (isOn) {
-        await fetch(`${API_BASE_URL}/stop`, { method: 'POST' });
-      }
+      if (isOn) await fetch(`${API_BASE_URL}/stop`, { method: 'POST' });
       setIsOn(!isOn);
+      setError(null);
     } catch (err) {
-      console.error("Error toggling camera:", err);
-      setError("Failed to toggle camera state");
+      setError("Failed to control camera");
     }
-  };
-
-  const formatTime = (isoString) => {
-    try {
-      if (!isoString) return "N/A";
-      const date = new Date(isoString);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return isoString || "N/A";
-    }
-  };
-
-  const getInitials = (name) => {
-    if (!name || name === "Unknown") return "?";
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-[#020617] text-slate-200">
       <Navigation />
-      <div className="flex flex-col h-screen ml-[100px] w-full">
-        <div className="grid grid-cols-12 gap-8 p-5 flex-1">
+      
+      <main className="flex-1 ml-[80px] p-8 flex flex-col gap-8">
+        {/* Simple Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Live Feed</h1>
+            <p className="text-slate-400 text-sm">Real-time face recognition monitoring</p>
+          </div>
+          
+          <button
+            onClick={toggleCamera}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold transition-all ${
+              isOn ? "bg-red-500/20 text-red-400 border border-red-500/50" : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50"
+            }`}
+          >
+            <Power size={18} />
+            {isOn ? "Stop Camera" : "Start Camera"}
+          </button>
+        </div>
 
-          {/* VIDEO SECTION */}
+        {error && <div className="bg-red-500/10 border border-red-500/50 p-3 text-red-400 rounded-lg text-sm">{error}</div>}
 
-          <div className="col-span-8 space-y-8">
-            <div className="bg-white p-6 rounded-2xl shadow-lg">
-
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Live Recognition Feed</h2>
-
-                <div className="flex items-center gap-4">
-
-                  <select
-                    value={selectedCamera}
-                    onChange={(e) => setSelectedCamera(Number(e.target.value))}
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {cameras.map(camera => (
-                      <option key={camera.id} value={camera.id}>
-                        {camera.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    onClick={handleCameraToggle}
-                    className={`p-2 rounded-lg ${
-                      isOn
-                        ? "bg-red-100 text-red-600"
-                        : "bg-green-100 text-green-600"
-                    }`}
-                    disabled={loading}
-                  >
-                    <Power className="w-6 h-6" />
-                  </button>
-
-                </div>
-              </div>
-
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-900">
-                {isOn ? (
-                  <img
-                    ref={videoRef}
-                    className="w-full h-full object-contain"
-                    alt="Live video feed"
-                    crossOrigin="anonymous"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                    <p className="text-white text-xl">Camera Off</p>
-                  </div>
-                )}
-              </div>
-
-              {error && (
-                <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  <span>{error}</span>
+        <div className="grid grid-cols-12 gap-8 flex-1">
+          {/* Main Video Window */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden h-full flex items-center justify-center relative shadow-xl">
+              {isOn ? (
+                <img ref={videoRef} className="w-full h-full object-contain" alt="Live Stream" crossOrigin="anonymous" />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-600">
+                  <Camera size={48} />
+                  <p className="font-medium">Camera Feed Offline</p>
                 </div>
               )}
-
+              {isOn && (
+                <div className="absolute top-4 left-4 bg-black/60 px-3 py-1 rounded-md border border-white/10 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* USERS SECTION */}
-
-          <div className="col-span-4 space-y-8">
-
-            {/* Known Users */}
-
-            <div className="bg-white p-6 rounded-2xl shadow-lg">
-
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Known Users</h2>
-                <div className="flex items-center gap-2 text-green-600">
-                  <Users className="w-5 h-5" />
-                  <span className="font-semibold">{knownUsers.length}</span>
-                </div>
+          {/* Side Lists */}
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+            
+            {/* Known People */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl flex flex-col h-1/2">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                <h2 className="font-bold flex items-center gap-2 text-white">
+                  <Users size={18} className="text-emerald-500" /> Known
+                </h2>
+                <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full font-bold">
+                  {knownUsers.length}
+                </span>
               </div>
-
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-
+              <div className="p-4 overflow-y-auto space-y-3 custom-scrollbar">
                 {knownUsers.length > 0 ? (
-                  knownUsers.map((user) => (
-                    <div key={user.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-
-                      {user.image ? (
-                        <img
-                          src={user.image}
-                          alt={user.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                          {getInitials(user.name)}
-                        </div>
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">{user.name}</div>
-                        <div className="text-sm text-gray-500 truncate">
-                          {formatTime(user.time)} • {user.camera}
-                        </div>
+                  knownUsers.map((user, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2 bg-white/5 rounded-xl border border-white/5">
+                      <img 
+                        src={user.face_image || `https://ui-avatars.com/api/?name=${user.name}&background=10b981&color=fff`} 
+                        className="w-10 h-10 rounded-lg object-cover" 
+                        alt="" 
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-white">{user.name}</p>
+                        <p className="text-[10px] text-slate-500">{new Date(user.timestamp).toLocaleTimeString()}</p>
                       </div>
-
-                      {user.confidence && (
-                        <div className="text-sm font-medium text-green-600">
-                          {user.confidence}%
-                        </div>
-                      )}
-
+                      <span className="text-xs font-mono text-emerald-500">{Math.round(user.confidence * 100)}%</span>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    {loading ? "Loading..." : "No known users detected"}
-                  </div>
+                  <p className="text-center text-slate-600 text-xs py-10">No matches</p>
                 )}
-
               </div>
-
             </div>
 
-            {/* Unknown Users */}
-
-            <div className="bg-white p-6 rounded-2xl shadow-lg">
-
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Unknown Users</h2>
-                <div className="flex items-center gap-2 text-yellow-600">
-                  <AlertCircle className="w-5 h-5" />
-                  <span className="font-semibold">{unknownUsers.length}</span>
-                </div>
+            {/* Unknown People */}
+            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl flex flex-col h-1/2">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                <h2 className="font-bold flex items-center gap-2 text-white">
+                  <AlertCircle size={18} className="text-amber-500" /> Unknown
+                </h2>
+                <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full font-bold">
+                  {unknownUsers.length}
+                </span>
               </div>
-
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-
-                {unknownUsers.length > 0 ? (
-                  unknownUsers.map((user) => (
-                    <div key={user.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-
-                      <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold">
-                        ?
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-yellow-600 truncate">
-                          Unknown Person
-                        </div>
-                        <div className="text-sm text-gray-500 truncate">
-                          {formatTime(user.time)} • {user.camera}
-                        </div>
-                      </div>
-
-                      {user.confidence && (
-                        <div className="text-sm font-medium text-yellow-600">
-                          {user.confidence}%
-                        </div>
-                      )}
-
+              <div className="p-4 overflow-y-auto space-y-3 custom-scrollbar">
+                {unknownUsers.map((user, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 bg-white/5 rounded-xl border border-white/5">
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 font-bold border border-amber-500/20">?</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-amber-500">Subject</p>
+                      <p className="text-[10px] text-slate-500">{new Date(user.timestamp).toLocaleTimeString()}</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    {loading ? "Loading..." : "No unknown users detected"}
                   </div>
-                )}
-
+                ))}
+                {unknownUsers.length === 0 && <p className="text-center text-slate-600 text-xs py-10">All secure</p>}
               </div>
-
             </div>
 
           </div>
-
         </div>
-      </div>
+      </main>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+      `}</style>
     </div>
   );
 }

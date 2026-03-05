@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Camera, Brain, ArrowRight, Shield, Cpu, Zap, Database, Eye } from 'lucide-react';
+import { Camera, Brain, ArrowRight, Shield, Cpu, Zap, Database } from 'lucide-react';
 import Footer from '../components/Footer';
 
 // Feature Card Component
@@ -40,7 +40,6 @@ const GlowingButton = ({ to, children, primary = false }) => {
 // Main Component
 export default function Home() {
   const [scrollY, setScrollY] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   // Track scroll position for parallax effects
   useEffect(() => {
@@ -48,27 +47,22 @@ export default function Home() {
       setScrollY(window.scrollY);
     };
     window.addEventListener('scroll', handleScroll);
-    
-    // Set loaded state after a short delay to ensure smooth animations
-    const loadTimer = setTimeout(() => setIsLoaded(true), 500);
-    
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      clearTimeout(loadTimer);
     };
   }, []);
 
   return (
-    <div className={`min-h-screen bg-black text-white overflow-hidden transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Hero Section */}
-      <section className="h-screen relative flex items-center" id="home">
+      <section className="h-screen relative flex items-center justify-center" id="home">
         <div className="absolute inset-0 z-0">
           <div className="w-full h-full bg-gradient-to-b from-black via-blue-900/30 to-black opacity-80" />
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center flex flex-col items-center">
-          <div className="transform transition-all duration-1000 translate-y-0" style={{ transform: `translateY(${-scrollY * 0.1}px)` }}>
-            <h1 className="text-6xl md:text-7xl font-bold leading-tight mb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <div className="transform transition-all duration-1000 translate-y-0 flex flex-col items-center" style={{ transform: `translateY(${-scrollY * 0.1}px)` }}>
+            <h1 className="text-6xl md:text-8xl font-bold leading-tight mb-6">
               <span className="block mb-2">Revolutionizing</span>
               <span className="bg-gradient-to-r from-blue-400 to-purple-600 text-transparent bg-clip-text">Face Recognition</span>
             </h1>
@@ -135,28 +129,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
-      {/* Loading Overlay */}
-      <div className={`fixed inset-0 bg-black z-[100] flex items-center justify-center transition-opacity duration-1000 ${isLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <div className="flex flex-col items-center">
-          <Eye className="w-16 h-16 text-blue-500 animate-pulse" />
-          <div className="mt-4 text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 text-transparent bg-clip-text">
-            512D
-          </div>
-          <div className="mt-2 text-gray-400">Loading experience...</div>
-          <div className="mt-8 w-48 h-1 bg-white/10 rounded overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 animate-[loading_2s_ease-in-out_infinite]"></div>
-          </div>
-        </div>
-      </div>
-
-      <style jsx>{`
-        @keyframes loading {
-          0% { width: 0; transform: translateX(-100%); }
-          50% { width: 100%; transform: translateX(0); }
-          100% { width: 0; transform: translateX(100%); }
-        }
-      `}</style>
 
       <Footer />
     </div>
