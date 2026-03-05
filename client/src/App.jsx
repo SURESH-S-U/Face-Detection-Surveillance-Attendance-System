@@ -7,6 +7,7 @@ import VideoAnalysisPage from './pages/upload';
 import Venue from './pages/Venue';
 import Parking from './pages/Parking';
 import Chatbot from './pages/chatbot';
+import './index.css';
 
 function App() {
   return (

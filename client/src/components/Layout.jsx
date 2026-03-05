@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Camera, Users, Home, Upload, Car, MapPin, MessageSquare } from 'lucide-react';
-import { cn } from '../lib/utils';
 
 export const Navigation = () => {
   const location = useLocation();
@@ -22,10 +21,11 @@ export const Navigation = () => {
         <Link
           key={to}
           to={to}
-          className={cn(
-            "p-3 rounded-xl transition-all duration-200 group relative",
-            location.pathname === to ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
-          )}
+          className={`p-3 rounded-xl transition-all duration-200 group relative ${
+            location.pathname === to
+              ? "bg-blue-600 text-white"
+              : "text-gray-400 hover:text-white"
+          }`}
         >
           <Icon className="w-6 h-6" />
           <span className="absolute left-full ml-4 px-2 py-1 bg-gray-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
