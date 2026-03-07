@@ -11,7 +11,7 @@ import hashlib
 import shutil
 import base64
 from datetime import datetime
-from flask import Flask, jsonify, Response
+from flask import Flask, jsonify, Response, request
 from flask_cors import CORS
 from threading import Event, Lock
 
@@ -222,6 +222,64 @@ def video_feed():
                     yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
             time.sleep(0.04)
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/register', methods=['POST'])
+def register_user():
+    try:
+        name = request.form.get('name')
+        if not name:
+            return jsonify({'success': False, 'message': 'Name is required'}), 400
+        
+        profile_picture = request.files.get('profile_picture')
+        if not profile_picture:
+            return jsonify({'success': False, 'message': 'Profile picture is required'}), 400
+        
+        # Create directory for the user
+        user_dir = os.path.join(REF_IMAGES_DIR, name)
+        os.makedirs(user_dir, exist_ok=True)
+        
+        # Save profile picture
+        profile_path = os.path.join(user_dir, 'profile.jpg')
+        profile_picture.save(profile_path)
+        
+        # Save gallery images
+        gallery_count = 0
+        for key, file in request.files.items():
+            if key.startswith('gallery_'):
+                gallery_path = os.path.join(user_dir, f'gallery_{gallery_count}.jpg')
+                file.save(gallery_path)
+                gallery_count += 1
+        
+        # Update the face database
+        add_face(name)
+        
+        return jsonify({
+            'success': True, 
+            'message': f'User {name} registered successfully with {gallery_count} gallery images'
+        })
+        
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return jsonify({'success': False, 'message': 'Registration failed'}), 500
+
+@app.route('/attendance_data')
+def get_attendance_data():
+    try:
+        # Load detection data
+        known_faces = []
+        if os.path.exists(known_log_file):
+            with open(known_log_file, 'r') as f:
+                known_data = json.load(f)
+                for name, data in known_data.items():
+                    known_faces.append({
+                        'name': name,
+                        'timestamp': data.get('last_detected', 'N/A')
+                    })
+        
+        return jsonify(known_faces)
+    except Exception as e:
+        print(f"Attendance data error: {e}")
+        return jsonify([])
 
 # --- RUNTIME ---
 

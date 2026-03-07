@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Camera, Users, Home, Upload, MapPin, MessageSquare } from 'lucide-react';
+import { Camera, Users, Home, Upload, MapPin, MessageSquare, UserPlus } from 'lucide-react';
 
 export const Navigation = () => {
   const location = useLocation();
@@ -11,6 +11,7 @@ export const Navigation = () => {
     { to: '/attendance', label: 'Attendance', icon: Users },
     { to: '/upload', label: 'Upload', icon: Upload },
     { to: '/venue', label: 'Venue', icon: MapPin },
+    { to: '/register', label: 'Register', icon: UserPlus },
     { to: '/chatbot', label: 'Chatbot', icon: MessageSquare },
   ];
 
