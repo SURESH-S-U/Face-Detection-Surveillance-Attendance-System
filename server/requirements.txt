@@ -1,0 +1,21 @@
+# We have to initialize Virtual Environment firts
+# conda create -n visionGuard python=3.10 -y
+# conda activate visionGuard
+
+# --- Notes for FAISS GPU ---
+# Note: On Windows, faiss-gpu should be installed via Conda:
+# conda install -c pytorch faiss-gpu
+
+# Then run the Requirements.txt file to install all.
+# pip install -r requirements.txt
+
+
+# --- Core AI & Vision ---
+insightface==0.7.3
+onnxruntime-gpu==1.17.0
+opencv-python
+numpy<2.0.0
+
+# --- Web Server ---
+flask
+flask-cors
