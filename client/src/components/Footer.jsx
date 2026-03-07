@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2">
               <Brain className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold">Protectify</span>
+              <span className="text-2xl font-bold">VisionGuard</span>
             </div>
             <p className="mt-4 text-gray-400">
               Leading the future of facial recognition technology with advanced AI solutions.
@@ -39,7 +39,7 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
             <ul className="space-y-2 text-gray-400">
-              <li>contact@gmail.com</li>
+              <li>VisionGuard@gmail.com</li>
               <li>+1 (555) 123-4567</li>
               <li>123 Tech Street</li>
               <li>San Francisco, CA 94105</li>
@@ -48,7 +48,7 @@ export default function Footer() {
         </div>
         
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
-          <p>© 2025 Protectify. All rights reserved.</p>
+          <p>© 2025 VisionGuard. All rights reserved.</p>
         </div>
       </div>
     </footer>
