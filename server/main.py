@@ -1015,36 +1015,46 @@ def initialize():
     recognition_thread.daemon = True
     recognition_thread.start()
 
+
+# This function is used to delete the Detected datas after close the run.
 def final_cleanup():
-    """Wipes all unknown data and the temporary database on exit."""
-    print("\n🧹 Performing final cleanup...")
+    """Wipes ALL session data (Known & Unknown logs + crops) on exit."""
+    print("\n🧹 Performing deep session cleanup...")
     
-    # 1. Remove the unknown detection log
-    if os.path.exists(unknown_log_file):
-        try:
-            os.remove(unknown_log_file)
-            print(f"🗑️ Deleted: {unknown_log_file}")
-        except: pass
-
-    # 2. Remove all unknown face screenshots
-    if os.path.exists(UNKNOWN_FACES_DIR):
-        try:
-            shutil.rmtree(UNKNOWN_FACES_DIR)
-            os.makedirs(UNKNOWN_FACES_DIR, exist_ok=True)
-            print(f"🗑️ Cleared: {UNKNOWN_FACES_DIR}")
-        except: pass
-
-    # 3. Delete the database files so they are rebuilt fresh next time
-    # This prevents "Unknown1" from being stuck in memory
-    for db_file in ["face_db.faiss", "name_mapping.json"]:
-        if os.path.exists(db_file):
+    # 1. List of all JSON files to delete (Logs and Deduplication hashes)
+    files_to_delete = [
+        known_log_file,     # detect_known.json
+        unknown_log_file,   # detect_unknown.json
+        sent_hashes_file,   # sent_hashes.json
+        "face_db.faiss",    # AI Vector database
+        "name_mapping.json" # AI Name list
+    ]
+    
+    for file in files_to_delete:
+        if os.path.exists(file):
             try:
-                os.remove(db_file)
-                print(f"🗑️ Reset: {db_file}")
-            except: pass
-            
-    print("✨ System is now clean for the next run.")
+                os.remove(file)
+                print(f"🗑️ Deleted: {file}")
+            except Exception as e:
+                print(f"⚠️ Could not delete {file}: {e}")
 
+    # 2. Clear Detection Folders (Crops taken during the live feed)
+    # Note: This does NOT delete your original training photos in Data/Images/
+    detection_folders = [KNOWN_FACES_DIR, UNKNOWN_FACES_DIR]
+    
+    for folder in detection_folders:
+        if os.path.exists(folder):
+            try:
+                shutil.rmtree(folder)
+                os.makedirs(folder, exist_ok=True)
+                print(f"🗑️ Wiped detection folder: {folder}")
+            except Exception as e:
+                print(f"⚠️ Could not clear folder {folder}: {e}")
+            
+    print("✨ Full cleanup complete. System will start 100% fresh next time.")
+
+
+# Main Function
 if __name__ == '__main__':
     try:
         # 1. Start system folders and threads
