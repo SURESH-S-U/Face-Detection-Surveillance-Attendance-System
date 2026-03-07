@@ -1,0 +1,11 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Face detection generated data
+Data/
+face_db.faiss
+name_mapping.json
+
+# Logs
+*.log   
