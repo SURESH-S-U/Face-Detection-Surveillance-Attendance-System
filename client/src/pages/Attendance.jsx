@@ -62,30 +62,26 @@ export default function Attendance() {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#020617] text-slate-200">
-      <Navigation />
-      
-      <main className="flex-1 ml-[80px] p-8 flex flex-col gap-8">
-        
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-white/5 pb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-              <Calendar className="text-blue-500" /> Attendance Management
-            </h1>
-            <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
-              <Activity size={12} className="text-emerald-500" /> System Live: Tracking {STUDENT_ROSTER.length} Subjects
-            </p>
-          </div>
-          
-          <div className="bg-white/5 px-6 py-3 rounded-2xl border border-white/10 flex items-center gap-4">
-            <Users className="text-blue-400 w-5 h-5" />
-            <div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enrolled Students</p>
-              <p className="text-xl font-black text-white">{STUDENT_ROSTER.length}</p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#020617] text-slate-200 p-8">
+      {/* Tactical Grid Overlay */}
+      <div 
+        className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" 
+        style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }}
+      />
+
+      {/* Header Section */}
+      <div className="border-b border-white/5 pb-4">
+        <h1 className="text-3xl font-black text-white flex items-center gap-3 mb-2">
+          <Calendar className="text-blue-500" /> Attendance Management
+        </h1>
+        <p className="text-slate-500 text-sm flex items-center gap-2">
+          <Activity size={12} className="text-emerald-500" /> System live: Tracking {STUDENT_ROSTER.length} subjects
+        </p>
+      </div>
+
+      <div className="max-w-7xl mx-auto">
+        {/* Main Content Card */}
+        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl border border-white/5 p-8 shadow-2xl">
 
         {/* Present vs Absent Blocks */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -94,7 +90,7 @@ export default function Attendance() {
           <div className="bg-white/[0.02] rounded-3xl border border-emerald-500/10 overflow-hidden shadow-2xl flex flex-col h-[500px]">
             <div className="bg-emerald-500/5 p-5 border-b border-emerald-500/10 flex justify-between items-center">
               <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-emerald-400">
-                <UserCheck size={18} /> Verified Present
+                <UserCheck size={18} /> Present
               </h2>
               <span className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-black">
                 {presentStudents.length}
@@ -127,7 +123,7 @@ export default function Attendance() {
           <div className="bg-white/[0.02] rounded-3xl border border-rose-500/10 overflow-hidden shadow-2xl flex flex-col h-[500px]">
             <div className="bg-rose-500/5 p-5 border-b border-rose-500/10 flex justify-between items-center">
               <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-rose-400">
-                <UserX size={18} /> Unreported (Absent)
+                <UserX size={18} /> Absent
               </h2>
               <span className="bg-rose-500 text-white px-3 py-1 rounded-full text-xs font-black">
                 {absentStudents.length}
@@ -158,9 +154,9 @@ export default function Attendance() {
         </div>
 
         {/* Long Term Graph */}
-        <div className="bg-white/[0.02] border border-white/10 p-8 rounded-3xl shadow-xl">
+        <div className="bg-white/[0.02] border border-white/10 p-8 rounded-3xl shadow-xl mt-8">
           <h2 className="text-sm font-black uppercase tracking-widest text-blue-400 mb-8 flex items-center gap-2">
-            <Activity size={16} /> Historical Intelligence (Last 7 Sessions)
+            <Activity size={16} /> Graph (Last 7 Sessions)
           </h2>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -186,14 +182,14 @@ export default function Attendance() {
                 />
                 <YAxis stroke="#475569" fontSize={10} axisLine={false} tickLine={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  cursor={{fill: 'rgba(255,255,255,0.02)'}}
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="present" 
+                  stackId="1" 
                   stroke="#10b981" 
-                  strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorPresent)" 
                   name="Present"
@@ -201,8 +197,8 @@ export default function Attendance() {
                 <Area 
                   type="monotone" 
                   dataKey="absent" 
+                  stackId="1" 
                   stroke="#ef4444" 
-                  strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorAbsent)" 
                   name="Absent"
@@ -212,13 +208,8 @@ export default function Attendance() {
           </div>
         </div>
         
-      </main>
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-      `}</style>
+        </div>
+      </div>
     </div>
   );
 }

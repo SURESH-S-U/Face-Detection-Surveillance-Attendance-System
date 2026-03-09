@@ -103,13 +103,13 @@ const Register = () => {
            style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
       {/* Header Section */}
-      <div className="mb-8 border-b border-white/5 pb-6">
+      <div className="mb-4 border-b border-white/5 pb-6">
         <h1 className="text-3xl font-black text-white flex items-center gap-3 mb-2">
-          <UserPlus className="text-blue-500" /> Neural Registration System
+          <UserPlus className="text-blue-500" /> People Registration System
         </h1>
         <p className="text-slate-500 text-sm flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          Step {step} of 2: {step === 1 ? "Gallery Collection" : "Profile Verification"}
+          Register here
         </p>
       </div>
 
@@ -121,7 +121,7 @@ const Register = () => {
           {step === 1 && (
             <div className="space-y-8">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Subject Identification</h2>
+                <h2 className="text-2xl font-bold text-white mb-4">Name</h2>
                 <input
                   type="text"
                   placeholder="Enter full name"

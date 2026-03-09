@@ -1,15 +1,15 @@
 import React, { useState, useRef, useMemo } from 'react';
 import axios from 'axios';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
-import { Upload, UserCheck, UserX, ShieldCheck, PlayCircle, Fingerprint, Search, ExternalLink, Activity } from 'lucide-react';
-import { Navigation } from '../components/Layout';
+import { 
+  Upload, UserCheck, UserX, ShieldCheck, Search, 
+  Target, Cpu, Activity, Camera 
+} from 'lucide-react';
 
 const VideoAnalysisComponent = () => {
   const [videoSrc, setVideoSrc] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [activeTab, setActiveTab] = useState('known');
   const [searchQuery, setSearchQuery] = useState('');
   const fileInputRef = useRef(null);
 
@@ -25,217 +25,225 @@ const VideoAnalysisComponent = () => {
   const handleAnalyzeClick = async () => {
     if (!videoSrc || !fileInputRef.current?.files?.[0]) return;
     setIsAnalyzing(true);
-    setAnalysisResult(null);
     setProgress(0);
 
     const formData = new FormData();
     formData.append('file', fileInputRef.current.files[0]);
 
     try {
-      const progressInterval = setInterval(() => setProgress(p => (p < 95 ? p + 2 : p)), 400);
+      const progressInterval = setInterval(() => setProgress(p => (p < 95 ? p + 1 : p)), 200);
       const response = await axios.post('http://127.0.0.1:8000/upload', formData);
       clearInterval(progressInterval);
       setProgress(100);
       setAnalysisResult(response.data);
     } catch (error) {
-      alert("Analysis failed. System Offline.");
+      alert("Neural Link Interrupted.");
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const filteredPeople = useMemo(() => {
-    if (!analysisResult) return [];
-    return analysisResult.results.filter(face => {
-      const isTypeMatch = activeTab === 'known' ? face.name !== 'Unknown' : face.name === 'Unknown';
-      const isSearchMatch = face.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            face.face_id.toLowerCase().includes(searchQuery.toLowerCase());
-      return isTypeMatch && isSearchMatch;
-    });
-  }, [analysisResult, activeTab, searchQuery]);
+  const knownFaces = useMemo(() => 
+    analysisResult?.results.filter(f => f.name !== 'Unknown' && f.name.toLowerCase().includes(searchQuery.toLowerCase())) || [], 
+    [analysisResult, searchQuery]
+  );
+
+  const unknownFaces = useMemo(() => 
+    analysisResult?.results.filter(f => f.name === 'Unknown') || [], 
+    [analysisResult]
+  );
 
   return (
-    <div className="flex w-full min-h-screen bg-[#020617] text-slate-200">
-      <Navigation />
-      
-      <div className="flex-1 ml-[80px] flex flex-col">
-        {/* Simple Integrated Header */}
-        <header className="border-b border-white/5 px-8 py-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Video Forensic Analysis</h1>
-            <p className="text-slate-500 text-xs mt-1 flex items-center gap-2">
-              <Activity size={12} className="text-blue-500" /> Neural Scan Engine v2.0
-            </p>
-          </div>
-          {analysisResult && (
-            <div className="bg-blue-500/10 text-blue-400 px-4 py-1.5 rounded-full border border-blue-500/20 text-[11px] font-bold tracking-wider">
-              <ShieldCheck className="inline w-3 h-3 mr-1" /> SECURE SESSION
-            </div>
-          )}
-        </header>
+    <div className="min-h-screen bg-[#020617] text-slate-200 p-8 font-sans">
+      {/* Tactical Grid Overlay */}
+      <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
-        <main className="p-8 max-w-[1400px] w-full mx-auto grid grid-cols-12 gap-8">
-          
-          {/* Left Column */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Input Data</h2>
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className={`relative group cursor-pointer border-2 border-dashed rounded-xl aspect-video flex flex-col items-center justify-center transition-all ${
-                  videoSrc ? 'border-white/10 bg-black' : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05]'
-                }`}
-              >
-                {videoSrc ? (
-                  <video src={videoSrc} className="w-full h-full object-contain rounded-lg" />
-                ) : (
-                  <Upload className="w-8 h-8 text-slate-600 group-hover:text-blue-500 transition-colors" />
-                )}
-                <input type="file" accept="video/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-              </div>
+      {/* --- HEADER SECTION (Identical structure to Venue page) --- */}
+      <div className="mb-8 border-b border-white/5 pb-6 relative z-10 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-black text-white flex items-center gap-3 mb-2">
+            <ShieldCheck className="text-blue-500" /> Video Analysis
+          </h1>
+          <p className="text-slate-500 text-sm flex items-center gap-2">
+            <Activity size={12} className="text-blue-500" /> Uploaded video forensic analysis
+          </p>
+        </div>
 
-              <button
-                onClick={handleAnalyzeClick}
-                disabled={isAnalyzing || !videoSrc}
-                className={`w-full mt-6 py-3.5 rounded-xl font-bold text-sm transition-all ${
-                  isAnalyzing 
-                    ? 'bg-white/10 text-slate-500 cursor-not-allowed' 
-                    : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20'
-                }`}
-              >
-                {isAnalyzing ? `Scanning... ${progress}%` : 'Execute Deep Scan'}
-              </button>
-            </div>
+        {/* Search aligned to right side of header */}
+        <div className="relative mb-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+          <input 
+            type="text" 
+            placeholder="SEARCH BIOMETRICS..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-xl py-2.5 pl-11 pr-6 text-[10px] w-64 focus:border-blue-500/50 outline-none transition-all font-mono tracking-tighter text-slate-300"
+          />
+        </div>
+      </div>
 
-            {analysisResult && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 p-5 rounded-2xl border border-white/10">
-                  <UserCheck className="w-5 h-5 text-emerald-500 mb-2" />
-                  <div className="text-2xl font-bold text-white">{analysisResult.known_count}</div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Identified</div>
-                </div>
-                <div className="bg-white/5 p-5 rounded-2xl border border-white/10">
-                  <UserX className="w-5 h-5 text-rose-500 mb-2" />
-                  <div className="text-2xl font-bold text-white">{analysisResult.unknown_count}</div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unknown</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column */}
-          <div className="col-span-12 lg:col-span-8 space-y-6">
-            {!analysisResult && !isAnalyzing ? (
-              <div className="h-full min-h-[500px] flex flex-col items-center justify-center text-slate-700 bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
-                <Fingerprint className="w-16 h-16 mb-4 opacity-10 text-white" />
-                <p className="font-bold uppercase tracking-widest text-[10px]">Awaiting Intelligence Input</p>
-              </div>
-            ) : analysisResult && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-                {/* List Filter Bar */}
-                <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                    <button 
-                      onClick={() => setActiveTab('known')}
-                      className={`px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'known' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                    >
-                      Personnel
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('unknown')}
-                      className={`px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'unknown' ? 'bg-rose-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                    >
-                      Subjects
-                    </button>
-                  </div>
-
-                  <div className="relative w-full md:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input 
-                      type="text" 
-                      placeholder="Search records..."
-                      className="bg-black/40 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-xs w-full focus:outline-none focus:border-blue-500 transition-colors"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* Data List */}
-                <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
-                  <table className="w-full text-left">
-                    <thead className="bg-white/[0.02] sticky top-0">
-                      <tr>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Subject</th>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">ID Reference</th>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Accuracy</th>
-                        <th className="px-6 py-4"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {filteredPeople.map((face) => (
-                        <tr key={face.face_id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-4">
-                              <img 
-                                src={`data:image/jpeg;base64,${face.face_image}`} 
-                                className="w-10 h-10 rounded-lg object-cover border border-white/10" 
-                                alt="" 
-                              />
-                              <span className="text-sm font-medium text-white">
-                                {face.name === 'Unknown' ? 'Unknown' : face.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-xs font-mono text-slate-500 uppercase">
-                            #{face.face_id.slice(0, 12)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-20 h-1 bg-white/5 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full ${face.confidence > 0.8 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
-                                  style={{ width: `${face.confidence * 100}%` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-bold">{(face.confidence * 100).toFixed(0)}%</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <button className="text-slate-500 hover:text-blue-500">
-                              <ExternalLink size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+      {/* --- MAIN CONTENT (Centered container like Venue page) --- */}
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl border border-white/5 p-8 shadow-2xl">
+          <div className="grid grid-cols-12 gap-8">
             
-            {/* Minimal Stats Graph */}
-            {analysisResult && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analysisResult.results.slice(0, 15)}>
-                    <Bar dataKey="confidence" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <XAxis dataKey="name" hide />
-                  </BarChart>
-                </ResponsiveContainer>
+            {/* Left: Video & Neural Status */}
+            <div className="col-span-12 lg:col-span-7 space-y-6">
+              <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
+                <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <Camera size={16} /> Optic Stream
+                </h2>
+                
+                <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-white/5 group">
+                  {videoSrc ? (
+                    <video src={videoSrc} className="w-full h-full object-contain" controls />
+                  ) : (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-full flex flex-col items-center justify-center cursor-pointer hover:bg-white/[0.02] transition-all group"
+                    >
+                      <Upload className="text-slate-700 group-hover:text-blue-500 transition-colors mb-4" size={48} />
+                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em]">Initialize Video Uplink</p>
+                    </div>
+                  )}
+                  <input type="file" accept="video/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                  
+                  {isAnalyzing && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_20px_blue] animate-scan" />
+                      <div className="absolute inset-0 border-[20px] border-blue-500/5 shadow-inner" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-6 mt-2">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                        <Cpu size={14} className={isAnalyzing ? 'animate-spin text-blue-500' : ''} />
+                        Neural Engine
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-blue-500">{progress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleAnalyzeClick}
+                    disabled={isAnalyzing || !videoSrc}
+                    className={`px-8 py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all ${
+                      isAnalyzing 
+                      ? 'bg-white/5 text-slate-700 border border-white/5 cursor-wait' 
+                      : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/20 active:scale-95'
+                    }`}
+                  >
+                    {isAnalyzing ? 'Scanning...' : 'Start Deep Scan'}
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Right: Results Columns */}
+            <div className="col-span-12 lg:col-span-5">
+              <div className="grid grid-cols-2 gap-4 h-full min-h-[500px]">
+                
+                {/* Identified Column */}
+                <div className="flex flex-col bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden">
+                  <div className="p-4 border-b border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-emerald-500" />
+                      <h2 className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Identified</h2>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-[10px] font-mono text-emerald-500 font-bold">{knownFaces.length}</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                    {knownFaces.length > 0 ? knownFaces.map((face, i) => (
+                      <BiometricRow key={i} face={face} color="emerald" />
+                    )) : <EmptyUnit text="No IDs" />}
+                  </div>
+                </div>
+
+                {/* Unknown Column */}
+                <div className="flex flex-col bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden">
+                  <div className="p-4 border-b border-rose-500/20 bg-rose-500/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <UserX className="w-4 h-4 text-rose-500" />
+                      <h2 className="text-[10px] font-black uppercase tracking-widest text-rose-500">Unknown</h2>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-[10px] font-mono text-rose-500 font-bold">{unknownFaces.length}</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                    {unknownFaces.length > 0 ? unknownFaces.map((face, i) => (
+                      <BiometricRow key={i} face={face} color="rose" />
+                    )) : <EmptyUnit text="Clear" />}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
           </div>
-        </main>
+        </div>
       </div>
 
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        @keyframes scan {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(400px); }
+        }
+        .animate-scan {
+          animation: scan 3s linear infinite;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.05);
+          border-radius: 10px;
+        }
       `}</style>
     </div>
   );
 };
+
+// ... BiometricRow and EmptyUnit remain same ...
+const BiometricRow = ({ face, color }) => (
+  <div className="group bg-white/[0.02] border border-white/5 rounded-2xl p-2 hover:bg-white/5 transition-all">
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-3">
+        <div className="relative shrink-0">
+          <img 
+            src={`data:image/jpeg;base64,${face.face_image}`} 
+            className="w-10 h-10 rounded-lg object-cover grayscale group-hover:grayscale-0 transition-all border border-white/10" 
+            alt="" 
+          />
+          <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full bg-${color}-500`} />
+        </div>
+        <div className="flex-1 min-w-0 pt-0.5">
+          <p className="text-[9px] font-bold text-white truncate uppercase tracking-tighter">
+            {face.name === 'Unknown' ? 'SUBJECT_UNK' : face.name}
+          </p>
+          <p className="text-[7px] font-mono text-slate-600 uppercase tracking-tighter">ID: {face.face_id.slice(0, 6)}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 px-1">
+        <div className="flex-1 h-0.5 bg-white/5 rounded-full overflow-hidden">
+          <div className={`h-full bg-${color}-500`} style={{ width: `${face.confidence * 100}%` }} />
+        </div>
+        <span className={`text-[7px] font-mono font-bold text-${color}-500`}>{(face.confidence * 100).toFixed(0)}%</span>
+      </div>
+    </div>
+  </div>
+);
+
+const EmptyUnit = ({ text }) => (
+  <div className="h-full flex flex-col items-center justify-center py-20 opacity-10">
+    <Target size={24} className="mb-2" />
+    <span className="text-[8px] font-black uppercase tracking-[0.5em]">{text}</span>
+  </div>
+);
 
 export default VideoAnalysisComponent;

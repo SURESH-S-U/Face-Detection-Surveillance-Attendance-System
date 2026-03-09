@@ -83,26 +83,24 @@ const Venue = () => {
   const status = getStatus();
 
   return (
-    <div className="flex min-h-screen bg-[#020617] text-slate-200">
-      <Navigation />
-      
-      <main className="flex-1 ml-[80px] p-8 flex flex-col gap-8">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center border-b border-white/5 pb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Venue Intelligence</h1>
-            <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
-              <Activity size={12} className="text-blue-500" /> Live Occupancy Analytics
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <div className="bg-white/5 px-4 py-2 rounded-xl border border-white/10 flex items-center gap-3">
-              <ShieldCheck className="text-emerald-500 w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Zone: Main Hall</span>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#020617] text-slate-200 p-8">
+      {/* Tactical Grid Overlay */}
+      <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+
+      {/* Header Section */}
+      <div className="mb-8 border-b border-white/5 pb-6">
+        <h1 className="text-3xl font-black text-white flex items-center gap-3 mb-2">
+          <Camera className="text-blue-500" /> Venue Intelligence
+        </h1>
+        <p className="text-slate-500 text-sm flex items-center gap-2">
+          <Activity size={12} className="text-blue-500" /> Live occupancy analytics
+        </p>
+      </div>
+
+      <div className="max-w-7xl mx-auto">
+        {/* Main Content Card */}
+        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl border border-white/5 p-8 shadow-2xl">
 
         <div className="grid grid-cols-12 gap-8">
           
@@ -216,7 +214,8 @@ const Venue = () => {
 
           </div>
         </div>
-      </main>
+      </div>
+    </div>
     </div>
   );
 };
