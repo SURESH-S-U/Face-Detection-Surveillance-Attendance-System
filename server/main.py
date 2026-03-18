@@ -193,10 +193,28 @@ def get_known_faces():
     with data_lock:
         for name in os.listdir(REF_IMAGES_DIR) if os.path.exists(REF_IMAGES_DIR) else []:
             log = known_detections.get(name, {})
+            
+            # --- IMPROVEMENT: Prioritize profile.jpg for known users ---
+            user_dir = os.path.join(REF_IMAGES_DIR, name)
+            profile_path = os.path.join(user_dir, 'profile.jpg')
+            
+            img_base64 = None
+            if os.path.exists(profile_path):
+                try:
+                    with open(profile_path, 'rb') as f:
+                        img_base64 = f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                except Exception as e:
+                    print(f"Error reading profile for {name}: {e}")
+                    img_base64 = get_base64_image(user_dir) # Fallback to any image in folder
+            else:
+                img_base64 = get_base64_image(user_dir) # Fallback if profile.jpg missing
+            
             res.append({
-                "name": name, "image": get_base64_image(os.path.join(REF_IMAGES_DIR, name)),
+                "name": name, 
+                "face_image": img_base64, # Key name matched to frontend 'user.face_image'
                 "last_detected": log.get("last_detected", "Never"),
-                "confidence": log.get("score", 0), "status": "known"
+                "confidence": log.get("score", 0), 
+                "status": "known"
             })
     return jsonify(sorted(res, key=lambda x: str(x['last_detected']), reverse=True))
 
@@ -204,13 +222,35 @@ def get_known_faces():
 def get_unknown_faces():
     res = []
     with data_lock:
-        for folder in os.listdir(UNKNOWN_FACES_DIR) if os.path.exists(UNKNOWN_FACES_DIR) else []:
-            log = unknown_detections.get(folder, {})
-            res.append({
-                "id": folder, "image": get_base64_image(os.path.join(UNKNOWN_FACES_DIR, folder)),
-                "last_detected": log.get("last_detected", "N/A"), "status": "unknown"
-            })
+        if os.path.exists(UNKNOWN_FACES_DIR):
+            for folder in os.listdir(UNKNOWN_FACES_DIR):
+                folder_path = os.path.join(UNKNOWN_FACES_DIR, folder)
+                if os.path.isdir(folder_path):
+                    log = unknown_detections.get(folder, {})
+                    # This fetches the most recent .jpg captured for this unknown person
+                    captured_img = get_base64_image(folder_path)
+                    
+                    res.append({
+                        "id": folder,
+                        "name": folder, 
+                        "face_image": captured_img, # The captured face
+                        "last_detected": log.get("last_detected", "N/A"),
+                        "confidence": log.get("score", 0),
+                        "status": "unknown"
+                    })
     return jsonify(sorted(res, key=lambda x: str(x['last_detected']), reverse=True))
+
+@app.route('/detection_data')
+def get_detection_data():
+    # Merges both known (with profile pics) and unknown (with captures)
+    known = get_known_faces().get_json()
+    unknown = get_unknown_faces().get_json()
+    
+    # Filter known faces to only show those detected in this session
+    active_known = [k for k in known if k['last_detected'] != "Never"]
+    
+    return jsonify(active_known + unknown)
+
 
 @app.route('/video_feed')
 def video_feed():
@@ -265,18 +305,33 @@ def register_user():
 @app.route('/attendance_data')
 def get_attendance_data():
     try:
-        # Load detection data
-        known_faces = []
-        if os.path.exists(known_log_file):
-            with open(known_log_file, 'r') as f:
-                known_data = json.load(f)
-                for name, data in known_data.items():
-                    known_faces.append({
-                        'name': name,
-                        'timestamp': data.get('last_detected', 'N/A')
-                    })
-        
-        return jsonify(known_faces)
+        res = []
+        with data_lock:
+            # Get list of all registered people from the filesystem
+            all_registered = os.listdir(REF_IMAGES_DIR) if os.path.exists(REF_IMAGES_DIR) else []
+            
+            for name in all_registered:
+                user_dir = os.path.join(REF_IMAGES_DIR, name)
+                if not os.path.isdir(user_dir): continue
+                
+                # Check if they were detected in this session
+                is_present = name in known_detections
+                log = known_detections.get(name, {})
+                
+                # Get profile image
+                profile_path = os.path.join(user_dir, 'profile.jpg')
+                img_base64 = None
+                if os.path.exists(profile_path):
+                    with open(profile_path, 'rb') as f:
+                        img_base64 = f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+                
+                res.append({
+                    "name": name,
+                    "face_image": img_base64,
+                    "status": "present" if is_present else "absent",
+                    "last_detected": log.get("last_detected", "N/A")
+                })
+        return jsonify(res)
     except Exception as e:
         print(f"Attendance data error: {e}")
         return jsonify([])
@@ -336,5 +391,5 @@ if __name__ == '__main__':
             for person in os.listdir(REF_IMAGES_DIR): add_face(person)
         threading.Thread(target=run_recognition, daemon=True).start()
         app.run(host='0.0.0.0', port=5000, threaded=True)
-    except KeyboardInterrupt: pass
+    except KeyboardInterrupt: pass  
     finally: final_cleanup()

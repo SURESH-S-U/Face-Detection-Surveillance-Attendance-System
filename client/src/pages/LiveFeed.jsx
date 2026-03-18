@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users, AlertCircle, Power, Camera } from 'lucide-react';
-import { Navigation } from '../components/Layout';
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -21,9 +20,8 @@ export default function LiveFeed() {
       const known = data.filter(d => d.status === "known");
       const unknown = data.filter(d => d.status !== "known");
 
-      // Keep only recent detections to keep list clean
-      setKnownUsers(known.slice(0, 10));
-      setUnknownUsers(unknown.slice(0, 10));
+      setKnownUsers(known.slice(0, 15));
+      setUnknownUsers(unknown.slice(0, 15));
     } catch (err) {
       console.error(err);
     }
@@ -56,137 +54,164 @@ export default function LiveFeed() {
       <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
-      {/* Header Section */}
-      <div className="border-b border-white/5 pb-6">
-        <h1 className="text-3xl font-black text-white flex items-center gap-3 mb-2">
-          <Camera className="text-blue-500" /> Live Feed
-        </h1>
-        <p className="text-slate-500 text-sm flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          Real-time face recognition monitoring
-        </p>
-      </div>
+      <div className="max-w-[1600px] mx-auto relative z-10">
+        
+        {/* Header Section */}
+        <div className="border-b border-white/5 pb-6 mb-8 flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-black text-white flex items-center gap-3 mb-2">
+              <Camera className="text-blue-500" /> VisionGuard
+            </h1>
+            <p className="text-slate-500 text-sm flex items-center gap-2 font-medium">
+              <span className={`w-2 h-2 rounded-full ${isOn ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`}></span>
+              {isOn ? "Active Monitoring System" : "System Standby"}
+            </p>
+          </div>
+          <div className="text-right">
+             <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">Security Clearance: Level 4</p>
+          </div>
+        </div>
 
-      <div className="max-w-7xl mx-auto">
-        {/* Main Content Card */}
-        <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl border border-white/5 p-8 shadow-2xl">
+        <div className="grid grid-cols-12 gap-8">
           
-          {/* Camera Control */}
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-bold text-white">Camera Control</h2>
-            <button
-              onClick={toggleCamera}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest transition-all ${
-                isOn ? "bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-500/20" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
-              }`}
-            >
-              <Power size={18} />
-              {isOn ? "Stop Camera" : "Start Camera"}
-            </button>
+          {/* LEFT: Video Column (7 Columns) */}
+          <div className="col-span-12 lg:col-span-7 space-y-4">
+            
+            {/* BUTTON MOVED HERE: At the top of the video feed */}
+            <div className="flex justify-between items-center bg-white/[0.03] border border-white/10 p-4 rounded-2xl backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-500/20 p-2 rounded-lg">
+                  <Camera size={18} className="text-blue-400" />
+                </div>
+                <span className="font-black text-xs uppercase tracking-widest text-white">Primary Optical Feed</span>
+              </div>
+              
+              <button
+                onClick={toggleCamera}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] transition-all duration-300 shadow-xl ${
+                  isOn 
+                    ? "bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white" 
+                    : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20"
+                }`}
+              >
+                <Power size={14} />
+                {isOn ? "Terminate Feed" : "Initialize Feed"}
+              </button>
+            </div>
+
+            {/* Video Box */}
+            <div className="bg-black border border-white/10 rounded-3xl overflow-hidden relative shadow-2xl aspect-video flex items-center justify-center">
+              {isOn ? (
+                <img ref={videoRef} className="w-full h-full object-cover" alt="Live Stream" crossOrigin="anonymous" />
+              ) : (
+                <div className="flex flex-col items-center gap-4 text-slate-700">
+                  <Camera size={80} className="opacity-20 animate-pulse" />
+                  <p className="font-black uppercase tracking-widest text-xs opacity-40">Connection Lost - Terminal Offline</p>
+                </div>
+              )}
+              {isOn && (
+                <div className="absolute top-6 left-6 flex flex-col gap-2">
+                  <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 flex items-center gap-3">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Live: Camera_01</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {error && <div className="bg-rose-500/10 border border-rose-500/50 p-4 text-rose-400 rounded-2xl text-xs font-bold">{error}</div>}
           </div>
 
-          {error && <div className="bg-rose-500/10 border border-rose-500/50 p-4 text-rose-400 rounded-2xl text-sm font-medium mb-6">{error}</div>}
-
-          <div className="grid grid-cols-12 gap-8">
-            {/* Main Video Window */}
-            <div className="col-span-12 lg:col-span-8">
-              <div className="bg-black/50 border border-white/10 rounded-3xl overflow-hidden h-full flex items-center justify-center relative shadow-2xl aspect-video">
-                {isOn ? (
-                  <img ref={videoRef} className="w-full h-full object-contain" alt="Live Stream" crossOrigin="anonymous" />
-                ) : (
-                  <div className="flex flex-col items-center gap-4 text-slate-600">
-                    <Camera size={64} className="opacity-50" />
-                    <p className="font-black uppercase tracking-widest text-sm">Camera Feed Offline</p>
-                  </div>
-                )}
-                {isOn && (
-                  <div className="absolute top-4 left-4 bg-black/60 px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-xs font-black text-white uppercase tracking-wider">Live</span>
-                  </div>
-                )}
+          {/* RIGHT: Detection Lists Side-by-Side (5 Columns) */}
+          <div className="col-span-12 lg:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Authorized List */}
+            <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl border border-emerald-500/10 overflow-hidden shadow-2xl flex flex-col border-t-4 border-t-emerald-500/40">
+              <div className="bg-emerald-500/5 p-5 border-b border-emerald-500/10 flex justify-between items-center">
+                <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-emerald-400">
+                  <Users size={16} /> Authorized
+                </h3>
+                <span className="bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-black">
+                  {knownUsers.length}
+                </span>
               </div>
-            </div>
-
-            {/* Side Lists */}
-            <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
               
-              {/* Known People */}
-              <div className="bg-white/[0.02] rounded-3xl border border-emerald-500/10 overflow-hidden shadow-2xl flex flex-col h-1/2">
-                <div className="bg-emerald-500/5 p-5 border-b border-emerald-500/10 flex justify-between items-center">
-                  <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-emerald-400">
-                    <Users size={18} /> Known
-                  </h3>
-                  <span className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-black">
-                    {knownUsers.length}
-                  </span>
-                </div>
-                
-                <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3">
-                  {knownUsers.length > 0 ? (
-                    knownUsers.map((user, i) => (
-                      <div key={i} className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 hover:border-emerald-500/30 transition-all">
-                        <img 
-                          src={user.face_image || `https://ui-avatars.com/api/?name=${user.name}&background=10b981&color=fff`} 
-                          className="w-10 h-10 rounded-xl object-cover" 
-                          alt="" 
-                        />
-                        <div>
-                          <p className="text-sm font-bold text-white">{user.name}</p>
-                          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Status: Auto-Verified</p>
-                        </div>
-                        <span className="text-xs font-mono text-emerald-500">{Math.round(user.confidence * 100)}%</span>
+              <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3 max-h-[500px]">
+                {knownUsers.length > 0 ? (
+                  knownUsers.map((user, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-white/5 p-2.5 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all">
+                      <img 
+                        src={user.face_image || `https://ui-avatars.com/api/?name=${user.name}&background=10b981&color=fff`} 
+                        className="w-11 h-11 rounded-xl object-cover grayscale-[20%]" 
+                        alt="" 
+                      />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black text-white truncate uppercase tracking-tighter">{user.name}</p>
+                        <p className="text-[9px] text-emerald-500 font-bold uppercase">ID-Verified</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
-                       <Users size={32} className="mb-2" />
-                       <p className="text-xs font-bold uppercase tracking-widest">No Detections</p>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Unknown People */}
-              <div className="bg-white/[0.02] rounded-3xl border border-amber-500/10 overflow-hidden shadow-2xl flex flex-col h-1/2">
-                <div className="bg-amber-500/5 p-5 border-b border-amber-500/10 flex justify-between items-center">
-                  <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-amber-400">
-                    <AlertCircle size={18} /> Unknown
-                  </h3>
-                  <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-black">
-                    {unknownUsers.length}
-                  </span>
-                </div>
-                
-                <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3">
-                  {unknownUsers.length > 0 ? (
-                    unknownUsers.map((user, i) => (
-                      <div key={i} className="flex items-center gap-3 p-2 bg-white/5 rounded-xl border border-white/5 opacity-60">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 font-black">?</div>
-                        <div>
-                          <p className="text-sm font-bold text-amber-500">Subject</p>
-                          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Status: Unknown</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
-                       <AlertCircle size={32} className="mb-2" />
-                       <p className="text-xs font-bold uppercase tracking-widest">All Secure</p>
-                    </div>
-                  )}
-                </div>
+                  ))
+                ) : (
+                  <EmptyState icon={<Users size={32}/>} label="No Matches" />
+                )}
               </div>
             </div>
+
+            {/* Unknown List */}
+            <div className="bg-white/[0.02] backdrop-blur-md rounded-3xl border border-amber-500/10 overflow-hidden shadow-2xl flex flex-col border-t-4 border-t-amber-500/40">
+              <div className="bg-amber-500/5 p-5 border-b border-amber-500/10 flex justify-between items-center">
+                <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-amber-400">
+                  <AlertCircle size={16} /> Intrusions
+                </h3>
+                <span className="bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-black">
+                  {unknownUsers.length}
+                </span>
+              </div>
+              
+              <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3 max-h-[500px]">
+                {unknownUsers.length > 0 ? (
+                  unknownUsers.map((user, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 bg-white/5 rounded-2xl border border-amber-500/20">
+                      {user.face_image ? (
+                        <img 
+                          src={user.face_image} 
+                          className="w-11 h-11 rounded-xl object-cover border border-amber-500/30" 
+                          alt="Unknown" 
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 font-black text-xs border border-amber-500/20">?</div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black text-amber-500 truncate uppercase tracking-tighter">{user.name}</p>
+                        <p className="text-[9px] text-slate-500 font-bold uppercase">Subject Logged</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState icon={<AlertCircle size={32}/>} label="Zone Clear" />
+                )}
+              </div>
+            </div>
+            
           </div>
         </div>
       </div>
 
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
       `}</style>
+    </div>
+  );
+}
+
+// Helper component for clean lists
+function EmptyState({ icon, label }) {
+  return (
+    <div className="h-[200px] flex flex-col items-center justify-center text-slate-700 opacity-40">
+       <div className="mb-2">{icon}</div>
+       <p className="text-[10px] font-black uppercase tracking-widest">{label}</p>
     </div>
   );
 }
