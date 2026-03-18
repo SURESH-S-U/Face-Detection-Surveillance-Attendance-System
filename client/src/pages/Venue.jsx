@@ -15,7 +15,7 @@ const Venue = () => {
   const fetchVenueData = async () => {
     if (!isStreaming) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/detection_data`);
+      const response = await fetch(`${API_BASE_URL}/venue_occupancy`);
       if (response.ok) {
         const data = await response.json();
         const currentCount = data.person_count || 0;
@@ -116,7 +116,7 @@ const Venue = () => {
                   {isStreaming ? (
                     <>
                       <img 
-                        src={`${API_BASE_URL}/video_feed`} 
+                        src={`${API_BASE_URL}/venue_stream`} 
                         className="w-full h-full object-contain" 
                         alt="Live Stream" 
                       />
