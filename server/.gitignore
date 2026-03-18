@@ -11,3 +11,6 @@ name_mapping.json
 *.log   
 
 Source_Code.py
+
+detect_known.json
+detect_unknown.json

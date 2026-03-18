@@ -54,6 +54,7 @@ stop_event = Event()
 current_frame = None
 known_detections = {}
 unknown_detections = {}
+is_surveillance_active = True  # NEW: Global flag for camera control
 
 # --- CORE UTILITIES ---
 
@@ -187,6 +188,18 @@ def search_face(img):
 
 # --- ROUTES ---
 
+@app.route('/pause_surveillance')
+def pause_surveillance():
+    global is_surveillance_active
+    is_surveillance_active = False
+    return jsonify({"status": "Surveillance Paused - Camera Released"})
+
+@app.route('/resume_surveillance')
+def resume_surveillance():
+    global is_surveillance_active
+    is_surveillance_active = True
+    return jsonify({"status": "Surveillance Resumed - Camera Re-acquired"})
+
 @app.route('/known_faces')
 def get_known_faces():
     res = []
@@ -263,35 +276,58 @@ def video_feed():
             time.sleep(0.04)
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
+# Get image for Register using the same surveillance camera
+@app.route('/get_snapshot')
+def get_snapshot():
+    """Allows the registration page to capture the current frame from the backend stream"""
+    with frame_lock:
+        if current_frame is not None:
+            _, buffer = cv2.imencode('.jpg', current_frame)
+            return Response(buffer.tobytes(), mimetype='image/jpeg')
+    return jsonify({'success': False, 'message': 'Frame not available'}), 500
+
+
 @app.route('/register', methods=['POST'])
 def register_user():
     try:
+        # 1. Get the name from the form data
         name = request.form.get('name')
         if not name:
             return jsonify({'success': False, 'message': 'Name is required'}), 400
         
+        # 2. Get the profile picture
         profile_picture = request.files.get('profile_picture')
         if not profile_picture:
             return jsonify({'success': False, 'message': 'Profile picture is required'}), 400
         
-        # Create directory for the user
+        # 3. Create the directory for the user in Data/Images
         user_dir = os.path.join(REF_IMAGES_DIR, name)
+        
+        # If user already exists, we clear the folder to update the dataset fresh
+        if os.path.exists(user_dir):
+            shutil.rmtree(user_dir)
         os.makedirs(user_dir, exist_ok=True)
         
-        # Save profile picture
+        # 4. Save the profile picture specifically as 'profile.jpg'
+        # This is used for the UI and also as part of the AI dataset
         profile_path = os.path.join(user_dir, 'profile.jpg')
         profile_picture.save(profile_path)
         
-        # Save gallery images
+        # 5. Save all gallery images as gallery_0.jpg, gallery_1.jpg, etc.
         gallery_count = 0
-        for key, file in request.files.items():
+        for key in request.files:
             if key.startswith('gallery_'):
+                file = request.files[key]
                 gallery_path = os.path.join(user_dir, f'gallery_{gallery_count}.jpg')
                 file.save(gallery_path)
                 gallery_count += 1
         
-        # Update the face database
+        # 6. Update the face database/index immediately
+        # This calls your existing add_face function to process the new images
         add_face(name)
+        
+        print(f"✅ Successfully registered {name} with {gallery_count} gallery images and 1 profile pic.")
         
         return jsonify({
             'success': True, 
@@ -299,8 +335,8 @@ def register_user():
         })
         
     except Exception as e:
-        print(f"Registration error: {e}")
-        return jsonify({'success': False, 'message': 'Registration failed'}), 500
+        print(f"❌ Registration error: {e}")
+        return jsonify({'success': False, 'message': f'Registration failed: {str(e)}'}), 500
 
 @app.route('/attendance_data')
 def get_attendance_data():
@@ -339,27 +375,52 @@ def get_attendance_data():
 # --- RUNTIME ---
 
 def run_recognition():
-    global current_frame
-    cap = cv2.VideoCapture(0)
+    global current_frame, is_surveillance_active
+    cap = None
+    
     while not stop_event.is_set():
-        ret, frame = cap.read()
-        if not ret: break
-        
-        small = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
-        search_face(small) # This updates global face_trackers
-        
-        # Draw from global face_trackers to ensure continuous bounding boxes
-        with data_lock:
-            for tid, info in face_trackers.items():
-                bbox, name, score = info['bbox'], info['name'], info['score']
-                x1, y1, x2, y2 = [int(c * 2) for c in bbox]
-                color = (0, 255, 0) if "Unknown" not in name else (0, 0, 255)
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                label = f"{name} ({score:.2f})"
-                cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-        
-        with frame_lock: current_frame = frame.copy()
-    cap.release()
+        if is_surveillance_active:
+            # 1. Initialize camera if it's not open (Re-acquire hardware)
+            if cap is None or not cap.isOpened():
+                cap = cv2.VideoCapture(0)
+                if cap.isOpened():
+                    print("📷 Surveillance Camera Re-acquired")
+            
+            ret, frame = cap.read()
+            if not ret: 
+                time.sleep(0.1)
+                continue
+            
+            small = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
+            search_face(small) # This updates global face_trackers
+            
+            # Draw from global face_trackers to ensure continuous bounding boxes
+            with data_lock:
+                for tid, info in face_trackers.items():
+                    bbox, name, score = info['bbox'], info['name'], info['score']
+                    x1, y1, x2, y2 = [int(c * 2) for c in bbox]
+                    color = (0, 255, 0) if "Unknown" not in name else (0, 0, 255)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    label = f"{name} ({score:.2f})"
+                    cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            
+            with frame_lock: 
+                current_frame = frame.copy()
+        else:
+            # 2. Surveillance is PAUSED: Release the camera hardware completely
+            if cap is not None:
+                cap.release()
+                cap = None
+                with frame_lock: 
+                    current_frame = None
+                print("📷 Camera Hardware Released (Surveillance Paused)")
+            
+            # Sleep slightly to prevent high CPU usage while the camera is released
+            time.sleep(0.5)
+
+    # Final cleanup if the thread stops
+    if cap: 
+        cap.release()
 
 def final_cleanup():
     print("\n🧹 Performing deep session cleanup...")
